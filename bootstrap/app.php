@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureEmployerHasCompany;
+use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,7 +15,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'role' => EnsureUserHasRole::class,
+            'company.required' => EnsureEmployerHasCompany::class,
+        ]);
+
+        $middleware->web(append: [
+            EnsureUserIsActive::class,
+        ]);
+
+        $middleware->redirectUsersTo(fn (Request $request) => route($request->user()->dashboardRouteName()));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
